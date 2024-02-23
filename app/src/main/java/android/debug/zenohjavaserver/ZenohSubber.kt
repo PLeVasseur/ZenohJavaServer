@@ -8,6 +8,7 @@ import io.zenoh.keyexpr.KeyExpr
 import io.zenoh.query.Reply
 import io.zenoh.sample.Sample
 import io.zenoh.selector.Selector
+import org.eclipse.uprotocol.v1.UMessage
 import java.util.Optional
 import java.util.concurrent.BlockingQueue
 
@@ -23,11 +24,17 @@ class ZenohSubber {
                         session.declareSubscriber(keyExpr).res().use { subscriber ->
                             val receiver: BlockingQueue<Optional<Sample>>? = subscriber.receiver
                             checkNotNull(receiver)
+                            var idx = 0
                             while (true) {
                                 val wrapper: Optional<Sample> = receiver.take()
+                                val receiveTime = System.nanoTime()
                                 if (wrapper.isEmpty) break
                                 val sample: Sample = wrapper.get()
-                                Log.d("Subscriber", ">> Received ${sample.kind} ('${sample.keyExpr}': '${sample.value}')")
+                                val bytes = sample.value.payload
+                                val messageRequest = UMessage.parseFrom(bytes)
+                                Log.d("ZenohJavaClient", "[${String.format("%4s", idx)}] receiveTime: $receiveTime")
+//                                Log.d("Subscriber", ">> Received ${sample.kind} ('${sample.keyExpr}': '${sample.value}' : '$messageRequest')")
+                                idx++
                             }
                         }
                     }
